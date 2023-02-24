@@ -1,0 +1,19 @@
+-- Load data from HDFS
+inputDialouges = LOAD 'hdfs:///user/pawan/inputs' USING PigStorage('\t') AS (name:chararray, line:chararray);
+
+-- Filter out the first 2 lines
+ranked = RANK inputDialouges;
+OnlyDialouges = FILTER ranked by (rank_inputDialouges > 2);
+
+-- Group by name
+groupByName = GROUP OnlyDialouges BY name;
+
+-- Count the no of lines by each character
+names = FOREACH groupByName GENERATE $0 as name, COUNT($1) as no_of_lines;
+namesOrdered = ORDER names BY no_of_lines DESC;
+
+-- Remove the output folder
+rmf hdfs:///user/pawan/outputs
+
+-- Store result in HDFS
+STORE namesOrdered INTO 'hdfs:///user/pawan/outputs' USING PigStorage('\t');
